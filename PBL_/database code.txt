@@ -1,0 +1,113 @@
+import pymysql
+db=pymysql.connect(host="database-2.crewf9jbpd79.ap-south-1.rds.amazonaws.com",
+        user='admin',
+        password='7083581881',
+        database='mydb')
+
+cursor=db.cursor()
+
+#cursor.execute("CREATE TABLE customers (name VARCHAR(255), address VARCHAR(255))")
+
+def insert(name,address):
+    sql = "INSERT INTO customers (name, address) VALUES (%s, %s)"
+    val = (name,address)
+    cursor.execute(sql,val)
+    db.commit()
+    print("record iserted.")
+
+def delete(name):
+    sql = "DELETE FROM customers WHERE name = %s"
+    inp = ("{}".format(name),)
+    cursor.execute(sql,inp)
+    db.commit()
+    print("deleted...")
+
+#l=cursor.execute('SHOW TABLES')
+
+def find(name):
+    cursor.execute("select * from customers")
+    l=cursor.fetchall()
+    for i in l:
+        if i[0]==name:
+            print("record is present in db")
+            return 1
+    return 0
+"""
+sql = "INSERT INTO customers (name, address) VALUES (%s, %s)"
+val = [
+  ('Peter', 'Lowstreet 4'),
+  ('Amy', 'Apple st 652'),
+  ('Hannah', 'Mountain 21'),
+  ('Michael', 'Valley 345'),
+  ('Sandy', 'Ocean blvd 2'),
+  ('Betty', 'Green Grass 1'),
+  ('Richard', 'Sky st 331'),
+  ('Susan', 'One way 98'),
+  ('Vicky', 'Yellow Garden 2'),
+  ('Ben', 'Park Lane 38'),
+  ('William', 'Central st 954'),
+  ('Chuck', 'Main Road 989'),
+  ('Viola', 'Sideway 1633')
+]
+cursor.executemany(sql, val)
+db.commit()
+print(cursor.rowcount, "was inserted.")
+"""
+print(find("Sandy"))
+delete("Sandy")
+print(find('Sandy'))
+
+
+
+
+
+
+
+
+
+
+from flask import Flask, render_template_string, request, session, redirect
+from werkzeug import MultiDict
+
+from flask_wtf import FlaskForm
+from wtforms import StringField, IntegerField
+from wtforms.validators import AnyOf
+
+app = Flask(__name__)
+app.secret_key = 'secret'
+
+class MyForm(FlaskForm):
+    name = StringField('name', validators=[AnyOf(['secretname'])])
+
+@app.route('/', methods=['POST', 'GET'])
+def form():
+    form = MyForm()
+    html = '''
+    {% for error in form.name.errors %} <span>{{ error }}</span> {% endfor %}
+    <form method="POST" action="/">
+        {{ form.csrf_token }}
+        {{ form.name.label }} {{ form.name(size=20) }}
+        <input type="submit" value="Go">
+    </form>
+    '''
+
+    if request.method == 'GET':
+        formdata = session.get('formdata', None)
+        if formdata:
+            form = MyForm(MultiDict(formdata))
+            form.validate()
+            session.pop('formdata')
+        return render_template_string(html, form=form)
+
+    if form.validate_on_submit():
+        # use the form somehow
+        # ...
+        return redirect('/#registered')
+
+    if form.is_submitted() and not form.validate():
+        session['formdata'] = request.form
+        return redirect('/#invalid')
+
+if __name__ == "__main__":
+    app.run()
+                    
